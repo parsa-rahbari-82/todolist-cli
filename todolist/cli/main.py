@@ -11,8 +11,9 @@ def print_menu():
     print("3. Edit a project")
     print("4. List tasks in a project")
     print("5. Add a task to a project")
-    print("6. Edit a task")
-    print("7. Delete a project")
+    print("6. Change a task's status")
+    print("7. Edit a task's details")
+    print("8. Delete a project")
     print("0. Exit")
 
 def run_cli():
@@ -73,6 +74,13 @@ def run_cli():
                 print(f"✅ Task '{task.title}' added successfully!")
 
             elif choice == "6":
+                task_id = int(input("Enter task ID to change status: "))
+                status = input("Enter new status (todo/doing/done): ")
+                # We need a dedicated service method for this
+                task = service.change_task_status(task_id, status)
+                print(f"✅ Task {task_id} status updated to '{task.status}'.")
+            
+            elif choice == "7":
                 task_id = int(input("Enter task ID to edit: "))
                 # Get current values to show as defaults
                 current_task = service.get_task(task_id)
@@ -92,7 +100,7 @@ def run_cli():
                 task = service.edit_task(task_id, title, desc, status, deadline_str)
                 print(f"✅ Task {task_id} updated successfully.")
                 
-            elif choice == "7":
+            elif choice == "8":
                 proj_id = int(input("Enter project ID to delete: "))
                 storage.delete_project(proj_id) # Calling storage directly for simplicity here
                 print(f"✅ Project {proj_id} and its tasks have been deleted.")
