@@ -13,3 +13,7 @@ class DuplicateError(TodolistError):
 class NotFoundError(TodolistError):
     """Raised when an item (project or task) is not found."""
     pass
+
+class LimitExceededError(TodolistError):
+    """Raised when an action would exceed a configured limit (e.g., max projects)."""
+    pass

@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from todolist.core.services import TodolistService
 from todolist.storage.in_memory import InMemoryStorage
 from todolist.exceptions import TodolistError
@@ -14,8 +16,11 @@ def print_menu():
 
 def run_cli():
     """Main function to run the command-line interface."""
+    load_dotenv()
+    MAX_PROJECTS = int(os.getenv("MAX_NUMBER_OF_PROJECTS", 10))
+    MAX_TASKS = int(os.getenv("MAX_NUMBER_OF_TASKS", 20))
     storage = InMemoryStorage()
-    service = TodolistService(storage)
+    service = TodolistService(storage, max_projects=MAX_PROJECTS, max_tasks=MAX_TASKS)
     
     # Pre-populate with some data for easier testing
     p1 = service.create_project("Personal", "Tasks for home and personal life.")

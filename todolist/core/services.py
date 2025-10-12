@@ -1,15 +1,20 @@
 from datetime import datetime
 from todolist.core.models import Project, Task, TaskStatus
 from todolist.storage.in_memory import InMemoryStorage
-from todolist.exceptions import DuplicateError, ValidationError
+from todolist.exceptions import DuplicateError, ValidationError, LimitExceededError
 
 class TodolistService:
     """Service layer containing all business logic."""
 
-    def __init__(self, storage: InMemoryStorage):
+    def __init__(self, storage: InMemoryStorage, max_projects: int, max_tasks: int):
         self._storage = storage
+        self._max_projects = max_projects
+        self._max_tasks = max_tasks
 
     def create_project(self, name: str, description: str) -> Project:
+        # Check against the maximum number of projects
+        if len(self._storage.list_projects()) >= self._max_projects:
+            raise LimitExceededError(f"Cannot create project. Maximum limit of {self._max_projects} reached.")
         if len(name) > 30 or len(description) > 150:
             raise ValidationError("Name or description exceeds character limits.")
         if self._storage.get_project_by_name(name):
@@ -20,10 +25,14 @@ class TodolistService:
     def create_task(
         self, project_id: int, title: str, description: str, deadline_str: str | None
     ) -> Task:
+        # Check against the maximum number of tasks for this project
+        if len(self._storage.list_tasks_for_project(project_id)) >= self._max_tasks:
+            raise LimitExceededError(f"Cannot create task. Maximum limit of {self._max_tasks} reached for this project.")
+        
         if len(title) > 30 or len(description) > 150:
             raise ValidationError("Title or description exceeds character limits.")
         
-        deadline = self._parse_deadline(deadline_str) # Parse and validate
+        deadline = self._parse_deadline(deadline_str)
         return self._storage.create_task(project_id, title, description, deadline)
 
     def change_task_status(self, task_id: int, status: str) -> Task:
