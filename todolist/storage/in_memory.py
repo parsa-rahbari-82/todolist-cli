@@ -74,6 +74,11 @@ class InMemoryStorage:
             if task.project_id == project_id
         ]
         
+    def update_task_status(self, task_id: int, status: str) -> Task:
+        task = self.get_task(task_id)
+        task.status = status
+        return task
+    
     def update_task(
         self,
         task_id: int,
