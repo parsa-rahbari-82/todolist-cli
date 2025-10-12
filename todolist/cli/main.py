@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from todolist.core.services import TodolistService
 from todolist.storage.in_memory import InMemoryStorage
 from todolist.exceptions import TodolistError
@@ -6,16 +8,21 @@ def print_menu():
     print("\n--- To-Do List Menu ---")
     print("1. List all projects")
     print("2. Create a new project")
-    print("3. List tasks in a project")
-    print("4. Add a task to a project")
-    print("5. Edit a task")
-    print("6. Delete a project")
+    print("3. Edit a project")
+    print("4. List tasks in a project")
+    print("5. Add a task to a project")
+    print("6. Change a task's status")
+    print("7. Edit a task's details")
+    print("8. Delete a project")
     print("0. Exit")
 
 def run_cli():
     """Main function to run the command-line interface."""
+    load_dotenv()
+    MAX_PROJECTS = int(os.getenv("MAX_NUMBER_OF_PROJECTS", 10))
+    MAX_TASKS = int(os.getenv("MAX_NUMBER_OF_TASKS", 20))
     storage = InMemoryStorage()
-    service = TodolistService(storage)
+    service = TodolistService(storage, max_projects=MAX_PROJECTS, max_tasks=MAX_TASKS)
     
     # Pre-populate with some data for easier testing
     p1 = service.create_project("Personal", "Tasks for home and personal life.")
@@ -40,6 +47,17 @@ def run_cli():
                 print(f"✅ Project '{project.name}' created successfully!")
 
             elif choice == "3":
+                proj_id = int(input("Enter project ID to edit: "))
+                current_project = storage.get_project(proj_id)
+
+                print("(Leave blank to keep current value)")
+                name = input(f"Enter new name [{current_project.name}]: ") or current_project.name
+                desc = input(f"Enter new description [{current_project.description}]: ") or current_project.description
+
+                project = service.edit_project(proj_id, name, desc)
+                print(f"✅ Project {project.id} updated successfully.")
+            
+            elif choice == "4":
                 proj_id = int(input("Enter project ID to list tasks: "))
                 tasks = service.list_tasks(proj_id)
                 if not tasks:
@@ -47,7 +65,7 @@ def run_cli():
                 for t in tasks:
                     print(t)
 
-            elif choice == "4":
+            elif choice == "5":
                 proj_id = int(input("Enter project ID to add task to: "))
                 title = input("Enter task title: ")
                 desc = input("Enter task description: ")
@@ -55,7 +73,14 @@ def run_cli():
                 task = service.create_task(proj_id, title, desc, deadline)
                 print(f"✅ Task '{task.title}' added successfully!")
 
-            elif choice == "5":
+            elif choice == "6":
+                task_id = int(input("Enter task ID to change status: "))
+                status = input("Enter new status (todo/doing/done): ")
+                # We need a dedicated service method for this
+                task = service.change_task_status(task_id, status)
+                print(f"✅ Task {task_id} status updated to '{task.status}'.")
+            
+            elif choice == "7":
                 task_id = int(input("Enter task ID to edit: "))
                 # Get current values to show as defaults
                 current_task = service.get_task(task_id)
@@ -75,7 +100,7 @@ def run_cli():
                 task = service.edit_task(task_id, title, desc, status, deadline_str)
                 print(f"✅ Task {task_id} updated successfully.")
                 
-            elif choice == "6":
+            elif choice == "8":
                 proj_id = int(input("Enter project ID to delete: "))
                 storage.delete_project(proj_id) # Calling storage directly for simplicity here
                 print(f"✅ Project {proj_id} and its tasks have been deleted.")
