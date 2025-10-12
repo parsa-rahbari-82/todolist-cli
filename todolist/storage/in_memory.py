@@ -1,3 +1,4 @@
+from datetime import datetime
 from todolist.core.models import Project, Task
 from todolist.exceptions import NotFoundError
 
@@ -48,7 +49,7 @@ class InMemoryStorage:
 
     # --- Task Methods ---
 
-    def create_task(self, project_id: int, title: str, description: str) -> Task:
+    def create_task(self, project_id: int, title: str, description: str, deadline: datetime | None) -> Task:
         self.get_project(project_id) # Ensure project exists
         self._task_counter += 1
         task = Task(
@@ -56,6 +57,7 @@ class InMemoryStorage:
             project_id=project_id,
             title=title,
             description=description,
+            deadline=deadline,
         )
         self._tasks[task.id] = task
         return task
@@ -72,7 +74,17 @@ class InMemoryStorage:
             if task.project_id == project_id
         ]
         
-    def update_task_status(self, task_id: int, status: str) -> Task:
+    def update_task(
+        self,
+        task_id: int,
+        title: str,
+        description: str,
+        status: str,
+        deadline: datetime | None,
+    ) -> Task:
         task = self.get_task(task_id)
-        task.status = status # Assumes status is already validated
+        task.title = title
+        task.description = description
+        task.status = status
+        task.deadline = deadline
         return task

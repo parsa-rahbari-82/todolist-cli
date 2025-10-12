@@ -8,7 +8,7 @@ def print_menu():
     print("2. Create a new project")
     print("3. List tasks in a project")
     print("4. Add a task to a project")
-    print("5. Change a task's status")
+    print("5. Edit a task")
     print("6. Delete a project")
     print("0. Exit")
 
@@ -19,7 +19,7 @@ def run_cli():
     
     # Pre-populate with some data for easier testing
     p1 = service.create_project("Personal", "Tasks for home and personal life.")
-    service.create_task(p1.id, "Buy groceries", "Milk, Bread, Cheese")
+    service.create_task(p1.id, "Buy groceries", "Milk, Bread, Cheese", "2025-10-15")
 
     while True:
         print_menu()
@@ -51,15 +51,30 @@ def run_cli():
                 proj_id = int(input("Enter project ID to add task to: "))
                 title = input("Enter task title: ")
                 desc = input("Enter task description: ")
-                task = service.create_task(proj_id, title, desc)
+                deadline = input("Enter deadline (YYYY-MM-DD, optional): ")
+                task = service.create_task(proj_id, title, desc, deadline)
                 print(f"✅ Task '{task.title}' added successfully!")
 
             elif choice == "5":
-                task_id = int(input("Enter task ID to change status: "))
-                status = input("Enter new status (todo/doing/done): ")
-                task = service.change_task_status(task_id, status)
-                print(f"✅ Task {task_id} status updated to '{task.status}'.")
-
+                task_id = int(input("Enter task ID to edit: "))
+                # Get current values to show as defaults
+                current_task = service.get_task(task_id)
+                
+                print(f"(Leave blank to keep current value)")
+                title = input(f"Enter new title [{current_task.title}]: ") or current_task.title
+                desc = input(f"Enter new description [{current_task.description}]: ") or current_task.description
+                status = input(f"Enter new status (todo/doing/done) [{current_task.status}]: ") or current_task.status
+                
+                current_deadline_str = current_task.deadline.strftime('%Y-%m-%d') if current_task.deadline else ""
+                deadline_str = input(f"Enter new deadline (YYYY-MM-DD) [{current_deadline_str}]: ")
+                
+                # Handle case where user wants to keep existing deadline
+                if deadline_str == "":
+                    deadline_str = current_deadline_str
+                
+                task = service.edit_task(task_id, title, desc, status, deadline_str)
+                print(f"✅ Task {task_id} updated successfully.")
+                
             elif choice == "6":
                 proj_id = int(input("Enter project ID to delete: "))
                 storage.delete_project(proj_id) # Calling storage directly for simplicity here
