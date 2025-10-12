@@ -1,0 +1,80 @@
+from todolist.core.services import TodolistService
+from todolist.storage.in_memory import InMemoryStorage
+from todolist.exceptions import TodolistError
+
+def print_menu():
+    print("\n--- To-Do List Menu ---")
+    print("1. List all projects")
+    print("2. Create a new project")
+    print("3. List tasks in a project")
+    print("4. Add a task to a project")
+    print("5. Change a task's status")
+    print("6. Delete a project")
+    print("0. Exit")
+
+def run_cli():
+    """Main function to run the command-line interface."""
+    storage = InMemoryStorage()
+    service = TodolistService(storage)
+    
+    # Pre-populate with some data for easier testing
+    p1 = service.create_project("Personal", "Tasks for home and personal life.")
+    service.create_task(p1.id, "Buy groceries", "Milk, Bread, Cheese")
+
+    while True:
+        print_menu()
+        choice = input("Enter your choice: ")
+
+        try:
+            if choice == "1":
+                projects = service.list_projects()
+                if not projects:
+                    print("No projects found.")
+                for p in projects:
+                    print(p)
+            
+            elif choice == "2":
+                name = input("Enter project name: ")
+                desc = input("Enter project description: ")
+                project = service.create_project(name, desc)
+                print(f"✅ Project '{project.name}' created successfully!")
+
+            elif choice == "3":
+                proj_id = int(input("Enter project ID to list tasks: "))
+                tasks = service.list_tasks(proj_id)
+                if not tasks:
+                    print("No tasks found for this project.")
+                for t in tasks:
+                    print(t)
+
+            elif choice == "4":
+                proj_id = int(input("Enter project ID to add task to: "))
+                title = input("Enter task title: ")
+                desc = input("Enter task description: ")
+                task = service.create_task(proj_id, title, desc)
+                print(f"✅ Task '{task.title}' added successfully!")
+
+            elif choice == "5":
+                task_id = int(input("Enter task ID to change status: "))
+                status = input("Enter new status (todo/doing/done): ")
+                task = service.change_task_status(task_id, status)
+                print(f"✅ Task {task_id} status updated to '{task.status}'.")
+
+            elif choice == "6":
+                proj_id = int(input("Enter project ID to delete: "))
+                storage.delete_project(proj_id) # Calling storage directly for simplicity here
+                print(f"✅ Project {proj_id} and its tasks have been deleted.")
+
+            elif choice == "0":
+                print("Goodbye!")
+                break
+            
+            else:
+                print("Invalid choice, please try again.")
+
+        except TodolistError as e:
+            print(f"Error: {e}")
+        except ValueError:
+            print("Error: Invalid input. Please enter a number where required.")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
