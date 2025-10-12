@@ -22,6 +22,17 @@ class TodolistService:
         
         return self._storage.create_project(name, description)
 
+    def edit_project(self, project_id: int, name: str, description: str) -> Project:
+        if len(name) > 30 or len(description) > 150:
+            raise ValidationError("Name or description exceeds character limits.")
+        
+        # Check if the new name is already taken by another project
+        existing = self._storage.get_project_by_name(name)
+        if existing and existing.id != project_id:
+            raise DuplicateError(f"Project name '{name}' is already in use.")
+            
+        return self._storage.update_project(project_id, name, description)
+    
     def create_task(
         self, project_id: int, title: str, description: str, deadline_str: str | None
     ) -> Task:
