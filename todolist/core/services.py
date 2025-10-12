@@ -46,6 +46,10 @@ class TodolistService:
         deadline = self._parse_deadline(deadline_str)
         return self._storage.create_task(project_id, title, description, deadline)
 
+    def delete_task(self, task_id: int) -> None:
+        """Deletes a task by its ID."""
+        self._storage.delete_task(task_id)
+    
     def change_task_status(self, task_id: int, status: str) -> Task:
         if status not in ["todo", "doing", "done"]:
             raise ValidationError("Status must be one of 'todo', 'doing', or 'done'.")

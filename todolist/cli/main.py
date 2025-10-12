@@ -14,6 +14,7 @@ def print_menu():
     print("6. Change a task's status")
     print("7. Edit a task's details")
     print("8. Delete a project")
+    print("9. Delete a task")
     print("0. Exit")
 
 def run_cli():
@@ -104,6 +105,11 @@ def run_cli():
                 proj_id = int(input("Enter project ID to delete: "))
                 storage.delete_project(proj_id) # Calling storage directly for simplicity here
                 print(f"✅ Project {proj_id} and its tasks have been deleted.")
+                
+            elif choice == "9":
+                task_id = int(input("Enter task ID to delete: "))
+                service.delete_task(task_id)
+                print(f"✅ Task {task_id} has been deleted.")
 
             elif choice == "0":
                 print("Goodbye!")

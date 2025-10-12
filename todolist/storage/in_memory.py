@@ -93,3 +93,8 @@ class InMemoryStorage:
         task.status = status
         task.deadline = deadline
         return task
+
+    def delete_task(self, task_id: int) -> None:
+        """Deletes a task by its ID."""
+        self.get_task(task_id)
+        del self._tasks[task_id]
