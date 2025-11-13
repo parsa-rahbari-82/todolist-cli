@@ -1,11 +1,15 @@
 import os
-from dotenv import load_dotenv
-from todolist.core.services import TodolistService
-from todolist.storage.in_memory import InMemoryStorage
-from todolist.exceptions import TodolistError
+from sqlalchemy.orm import Session
+from app.db.session import SessionLocal
+from app.repositories.project_repository import ProjectRepository
+from app.repositories.task_repository import TaskRepository
+from app.services.project_service import ProjectService
+from app.services.task_service import TaskService
+from app.exceptions.base import TodolistError
+from app.models.project import Project
 
 def print_menu():
-    print("\n--- To-Do List Menu ---")
+    print("\n--- To-Do List Menu (RDB) ---")
     print("1. List all projects")
     print("2. Create a new project")
     print("3. Edit a project")
@@ -19,15 +23,17 @@ def print_menu():
 
 def run_cli():
     """Main function to run the command-line interface."""
-    load_dotenv()
     MAX_PROJECTS = int(os.getenv("MAX_NUMBER_OF_PROJECTS", 10))
     MAX_TASKS = int(os.getenv("MAX_NUMBER_OF_TASKS", 20))
-    storage = InMemoryStorage()
-    service = TodolistService(storage, max_projects=MAX_PROJECTS, max_tasks=MAX_TASKS)
+
+    # The CLI is responsible for creating and 'injecting' dependencies.
+    db: Session = SessionLocal()
     
-    # Pre-populate with some data for easier testing
-    p1 = service.create_project("Personal", "Tasks for home and personal life.")
-    service.create_task(p1.id, "Buy groceries", "Milk, Bread, Cheese", "2025-10-15")
+    project_repo = ProjectRepository(db)
+    task_repo = TaskRepository(db)
+    
+    project_service = ProjectService(project_repo, max_projects=MAX_PROJECTS)
+    task_service = TaskService(task_repo, max_tasks_per_project=MAX_TASKS)
 
     while True:
         print_menu()
@@ -35,7 +41,7 @@ def run_cli():
 
         try:
             if choice == "1":
-                projects = service.list_projects()
+                projects = project_service.list_projects()
                 if not projects:
                     print("No projects found.")
                 for p in projects:
@@ -44,23 +50,23 @@ def run_cli():
             elif choice == "2":
                 name = input("Enter project name: ")
                 desc = input("Enter project description: ")
-                project = service.create_project(name, desc)
+                project = project_service.create_project(name, desc)
                 print(f"✅ Project '{project.name}' created successfully!")
 
             elif choice == "3":
                 proj_id = int(input("Enter project ID to edit: "))
-                current_project = storage.get_project(proj_id)
+                current_project = project_service.get_project(proj_id)
 
                 print("(Leave blank to keep current value)")
                 name = input(f"Enter new name [{current_project.name}]: ") or current_project.name
                 desc = input(f"Enter new description [{current_project.description}]: ") or current_project.description
 
-                project = service.edit_project(proj_id, name, desc)
+                project = project_service.edit_project(proj_id, name, desc)
                 print(f"✅ Project {project.id} updated successfully.")
             
             elif choice == "4":
                 proj_id = int(input("Enter project ID to list tasks: "))
-                tasks = service.list_tasks(proj_id)
+                tasks = task_service.list_tasks(proj_id)
                 if not tasks:
                     print("No tasks found for this project.")
                 for t in tasks:
@@ -71,20 +77,18 @@ def run_cli():
                 title = input("Enter task title: ")
                 desc = input("Enter task description: ")
                 deadline = input("Enter deadline (YYYY-MM-DD, optional): ")
-                task = service.create_task(proj_id, title, desc, deadline)
+                task = task_service.create_task(proj_id, title, desc, deadline)
                 print(f"✅ Task '{task.title}' added successfully!")
 
             elif choice == "6":
                 task_id = int(input("Enter task ID to change status: "))
                 status = input("Enter new status (todo/doing/done): ")
-                # We need a dedicated service method for this
-                task = service.change_task_status(task_id, status)
+                task = task_service.change_task_status(task_id, status)
                 print(f"✅ Task {task_id} status updated to '{task.status}'.")
             
             elif choice == "7":
                 task_id = int(input("Enter task ID to edit: "))
-                # Get current values to show as defaults
-                current_task = service.get_task(task_id)
+                current_task = task_service.get_task(task_id)
                 
                 print(f"(Leave blank to keep current value)")
                 title = input(f"Enter new title [{current_task.title}]: ") or current_task.title
@@ -94,25 +98,25 @@ def run_cli():
                 current_deadline_str = current_task.deadline.strftime('%Y-%m-%d') if current_task.deadline else ""
                 deadline_str = input(f"Enter new deadline (YYYY-MM-DD) [{current_deadline_str}]: ")
                 
-                # Handle case where user wants to keep existing deadline
                 if deadline_str == "":
                     deadline_str = current_deadline_str
                 
-                task = service.edit_task(task_id, title, desc, status, deadline_str)
+                task = task_service.edit_task(task_id, title, desc, status, deadline_str)
                 print(f"✅ Task {task_id} updated successfully.")
                 
             elif choice == "8":
                 proj_id = int(input("Enter project ID to delete: "))
-                storage.delete_project(proj_id) # Calling storage directly for simplicity here
+                project_service.delete_project(proj_id)
                 print(f"✅ Project {proj_id} and its tasks have been deleted.")
                 
             elif choice == "9":
                 task_id = int(input("Enter task ID to delete: "))
-                service.delete_task(task_id)
+                task_service.delete_task(task_id)
                 print(f"✅ Task {task_id} has been deleted.")
 
             elif choice == "0":
                 print("Goodbye!")
+                db.close() # Close the database session on exit
                 break
             
             else:
