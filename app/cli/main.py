@@ -25,7 +25,10 @@ def run_cli():
     """Main function to run the command-line interface."""
     MAX_PROJECTS = int(os.getenv("MAX_NUMBER_OF_PROJECTS", 10))
     MAX_TASKS = int(os.getenv("MAX_NUMBER_OF_TASKS", 20))
-
+    print("****************************************************************")
+    print("WARNING: This CLI interface is DEPRECATED.")
+    print("It will be removed in future versions. Please migrate to the Web API.")
+    print("****************************************************************")
     # The CLI is responsible for creating and 'injecting' dependencies.
     db: Session = SessionLocal()
     
